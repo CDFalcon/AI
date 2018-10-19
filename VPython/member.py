@@ -19,10 +19,10 @@ class member:
         self.finished = False
         # The member's score
         self.score = 0.0
-        # The member's ball object, empty to start. really weird, but due to vpython's weird memory allocation, it needs to be a list/array
+        # The member's ball object
         self.ball = sphere(color=color.blue,pos=startPoint,radius=radiusP)
 
-    # If the ball is the best, make its color green
+    # If the ball is the best, make its color red and double its radius
     def best(self):
         self.ball.color = color.red
         self.ball.radius = 2*radiusP # Doesn't change the interaction with the finish line
