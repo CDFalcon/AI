@@ -1,5 +1,3 @@
-A basic program whose purpose is to "teach" a ball to move in a straight - or near - straight line to a final point. 
+A basic program whose purpose is to "teach" a ball to move in a straight - or near straight - line to a final point. 
 
-The ball can only move in random directional vectors for a random distance. By using a generation-to-generation machine learning algorithm,
-
-the ball learns overtime and perfects its routes. 
+The ball can only move in random directional vectors for a random distance. By using a generation-to-generation machine learning algorithm, the ball learns overtime and perfects its routes. 
