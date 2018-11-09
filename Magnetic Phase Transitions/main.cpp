@@ -5,6 +5,7 @@
 #include <sstream>
 #include <vector>
 #include <random>
+#include <fstream>
 
 //##############################\\
 
@@ -13,14 +14,15 @@ using namespace std;
 //##############################\\
 
 // Globals because I am lazy
-const int length = 8;           // Rectangular Lattice length
-const int mcs_max = 100000;     // Maximum reps for the Monte Carlo sim
-const double startTemp = 0.0;   // Starting temperature for the sim
-const double endTemp = 5.0;     // Final temperature for the sim
-const double tempInc = 0.1;     // Temperature increment
+const int length = 8;                // Rectangular Lattice length
+const int mcs_max = 100000;            // Maximum reps for the Monte Carlo sim
+const double startTemp = 0.1;        // Starting temperature for the sim
+const double endTemp = 5.0;          // Final temperature for the sim
+const double tempInc = 0.1;          // Temperature increment
+const string fileName = "data.dat";  // File name for data storage
 
-int lattice[length][length];    // Lattice Array
-mt19937 gen(time(0));           // mersenne twister seeded to time = system
+int lattice[length][length];         // Lattice Array
+mt19937 gen(time(0));                // mersenne twister seeded to time = system
 
 //##############################\\
 
@@ -32,6 +34,23 @@ int randomInt(int start, int end){
 double randomDouble(double start, double end){
     uniform_real_distribution<> dis(start, end);
     return dis(gen);
+}
+
+void writeData(string file, int arrayLength, double array[arrayLength]){
+    ofstream f(file);
+
+    if(f.is_open()){
+        cout<<"#------------------------------#\nWriting data to " << file << endl;
+        // Stores basic data at the top of the .dat file
+        f << length << endl << mcs_max << endl
+            << startTemp << endl << endTemp << endl
+            << tempInc << endl;
+
+        for (int i = 0; i < arrayLength - 1; i++) {
+            f << array[i] << endl;
+        }
+    }
+    f.close();
 }
 
 //##############################\\
@@ -96,20 +115,23 @@ double LatticeEnergy(){
             net_lattice += lattice[x][y];
         }
     }
-    // H << fabs(net_lattice/(length*length)) << endl;
     return net_lattice;
 }
 
 int main(int argc, char *argv[])
 {
-    double timeElapsed=0;           // Timer
+    double timeElapsed=0;     // Timer
 
-    cout << "Simulation starting..." << endl;
+    cout << "Simulation starting...\n";
+
+    double dataArray[int((endTemp-startTemp)/tempInc)];
 
     for(double temp = startTemp; temp <= endTemp; temp += tempInc) {
 
         NewLattice();
-        clock_t start = clock(); // start timer
+
+        // Start timer
+        clock_t start = clock();
         double avgEnergy = 0.0;
 
         // Loops for the total number of Monte Carlo's specified
@@ -123,19 +145,26 @@ int main(int argc, char *argv[])
             // if so then it computes lattice energy
             if (i >= (mcs_max * .90) && (i <= mcs_max)) {
                 double net_lattice = LatticeEnergy();
-                // Adds theabs value of the net lattice energy divided by the number of
+                // Adds the abs value of the net lattice energy divided by the number of
                 // lattice positions to the total energy
                 avgEnergy += fabs(net_lattice / (length * length));
             }
         }
 
         double duration = (clock() - start) / (double) CLOCKS_PER_SEC;
+        timeElapsed += duration;
 
         // Prints data for each temperature increase
-        cout << "Average Lattice Energy: " << avgEnergy / mcs_max * 10 << ", Temperature: " << temp << ", Duration: "
-             << duration << "(s)" << endl;
-        timeElapsed += duration;
+        cout << "#------------------------------#\nAverage Lattice Energy: "
+             << avgEnergy / mcs_max * 10 << "\nTemperature: "
+             << temp << "\nDuration: " << duration << "(s)\nEst. Time Remaining: "
+             // Calculates the est. time remaining in minutes by using the total time
+             << timeElapsed/(temp)*(endTemp-temp)/60 << "(min)\n";
+
+        dataArray[int(temp/tempInc)-1] = avgEnergy / mcs_max * 10;
     }
 
-    cout<<endl<<endl<<"Simulation finished, time elapsed: " << timeElapsed;
+    writeData(fileName, int((endTemp-startTemp)/tempInc), dataArray);
+
+    cout << "#------------------------------#\nSimulation finished, time elapsed: " << timeElapsed/60 << "(min)";
 }
