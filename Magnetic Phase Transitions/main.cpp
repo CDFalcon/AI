@@ -14,8 +14,8 @@ using namespace std;
 //##############################\\
 
 // Globals because I am lazy
-const int length = 8;                // Rectangular Lattice length
-const int mcs_max = 100000;            // Maximum reps for the Monte Carlo sim
+const int length = 4;                // Rectangular Lattice length
+const int mcs_max = 1000000;            // Maximum reps for the Monte Carlo sim
 const double startTemp = 0.1;        // Starting temperature for the sim
 const double endTemp = 5.0;          // Final temperature for the sim
 const double tempInc = 0.1;          // Temperature increment
@@ -72,7 +72,7 @@ void NewLattice()
 // Performs a flip
 void Flip(int x, int y, double temp)
 {
-    int *top, *bottom, *left, *right, *topright, *bottomleft;
+    int *top, *bottom, *left, *right;
     double dEnergy; // Change in energy
 
     // Checks to make sure the random point is not out of the bounds of the array
@@ -107,12 +107,12 @@ void Flip(int x, int y, double temp)
     }
 }
 
-double LatticeEnergy(){
-    double net_lattice = 0.0;
+double LatticeSpin(){
+    double net_lattice = 0;
 
     for (int x=0; x<length; x++){
         for(int y=0; y<length; y++){
-            net_lattice += lattice[x][y];
+            net_lattice += double(lattice[x][y]);
         }
     }
     return net_lattice;
@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
 
         // Start timer
         clock_t start = clock();
-        double avgEnergy = 0.0;
+        double avgSpin = 0.0;
 
         // Loops for the total number of Monte Carlo's specified
         for (int i = 0; i <= mcs_max; i++) {
@@ -142,12 +142,13 @@ int main(int argc, char *argv[])
             }
 
             // Checks to see if the values fall in the last 10% of mcs loop,
-            // if so then it computes lattice energy
+            // if so then it computes lattice spin
             if (i >= (mcs_max * .90) && (i <= mcs_max)) {
-                double net_lattice = LatticeEnergy();
-                // Adds the abs value of the net lattice energy divided by the number of
-                // lattice positions to the total energy
-                avgEnergy += fabs(net_lattice / (length * length));
+                double net_lattice = LatticeSpin();
+                // Finds the average spin for each point in the lattice
+                // Note: for a smooth curve, use
+                // avgSpin += fabs(net_lattice / (length * length));
+                avgSpin += fabs(net_lattice / (length * length));
             }
         }
 
@@ -155,13 +156,14 @@ int main(int argc, char *argv[])
         timeElapsed += duration;
 
         // Prints data for each temperature increase
-        cout << "#------------------------------#\nAverage Lattice Energy: "
-             << avgEnergy / mcs_max * 10 << "\nTemperature: "
+        cout << "#------------------------------#\nAverage Spin: "
+             << avgSpin/(mcs_max*.1) << "\nTemperature: "
              << temp << "\nDuration: " << duration << "(s)\nEst. Time Remaining: "
              // Calculates the est. time remaining in minutes by using the total time
              << timeElapsed/(temp)*(endTemp-temp)/60 << "(min)\n";
 
-        dataArray[int(temp/tempInc)-1] = avgEnergy / mcs_max * 10;
+        // Stores the data. Note: the average spin is only for the last 10% of the MCS
+        dataArray[int(temp/tempInc)-1] = avgSpin/(mcs_max*.1);
     }
 
     writeData(fileName, int((endTemp-startTemp)/tempInc), dataArray);
