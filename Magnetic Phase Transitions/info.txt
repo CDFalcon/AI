@@ -1,2 +1,1 @@
-For my undergraduate research at Augusta University. Its basic use is to run Monte Carlo simulations on rectangular Ising lattices
-in order to determine the critical temperatures of phase transitions of Ising ferromagnets.
+For my undergraduate research at Augusta University. The program's basic use is to run Monte Carlo simulations on rectangular Ising lattices in order to determine the critical temperatures of phase transitions of Ising ferromagnets.
