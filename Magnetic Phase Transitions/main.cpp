@@ -13,13 +13,13 @@ using namespace std;
 
 //##############################\\
 
-// Globals because I am lazy
-const int length = 4;                // Rectangular Lattice length
-const int mcs_max = 1000000;            // Maximum reps for the Monte Carlo sim
-const double startTemp = 0.1;        // Starting temperature for the sim
-const double endTemp = 5.0;          // Final temperature for the sim
-const double tempInc = 0.1;          // Temperature increment
-const string fileName = "data.dat";  // File name for data storage
+const int length = 5;               // Rectangular Lattice length
+const int mcs_max = 50000;      // Maximum reps for the Monte Carlo sim
+const double startTemp = 0.03;        // Starting temperature for the sim
+const double endTemp = 3.99;          // Final temperature for the sim
+const double tempInc = 0.03;          // Temperature increment
+const string fileName = "5x5.dat";  // File name for data storage
+const string fileName2 = "5x5^2.dat";  // File name for data storage - ^2
 
 int lattice[length][length];         // Lattice Array
 mt19937 gen(time(0));                // mersenne twister seeded to time = system
@@ -58,13 +58,13 @@ void writeData(string file, int arrayLength, double array[arrayLength]){
 // Fills the lattice with random spins: either 1 or -1
 void NewLattice()
 {
-    for (int x=0; x<length; x++){
-        for(int y=0; y<length; y++){
-            int initNum = randomInt(0,1);
-            if(initNum==0)
-                lattice[x][y]=1;
-            if(initNum==1)
-                lattice[x][y]=-1;
+    for (int x=0; x<length; x++) {
+        for (int y = 0; y < length; y++) {
+            int initNum = randomInt(0, 1);
+            //if(initNum==0)
+            lattice[x][y] = 1;
+            //if(initNum==1)
+            //    lattice[x][y]=-1;
         }
     }
 }
@@ -124,7 +124,8 @@ int main(int argc, char *argv[])
 
     cout << "Simulation starting...\n";
 
-    double dataArray[int((endTemp-startTemp)/tempInc)];
+    double dataArray[int((endTemp-startTemp)/tempInc)];  //M
+    double dataArray2[int((endTemp-startTemp)/tempInc)]; //M^2
 
     for(double temp = startTemp; temp <= endTemp; temp += tempInc) {
 
@@ -133,6 +134,7 @@ int main(int argc, char *argv[])
         // Start timer
         clock_t start = clock();
         double avgSpin = 0.0;
+        double avgSpin2 = 0.0;
 
         // Loops for the total number of Monte Carlo's specified
         for (int i = 0; i <= mcs_max; i++) {
@@ -148,7 +150,11 @@ int main(int argc, char *argv[])
                 // Finds the average spin for each point in the lattice
                 // Note: for a smooth curve, use
                 // avgSpin += fabs(net_lattice / (length * length));
-                avgSpin += fabs(net_lattice / (length * length));
+                avgSpin += fabs(net_lattice);
+
+                avgSpin2 += (net_lattice * net_lattice / (length * length * length * length));
+                // cout << fabs(net_lattice / (length * length)) << endl;
+                // cout << (net_lattice * net_lattice / (length * length * length * length)) << endl;
             }
         }
 
@@ -156,17 +162,18 @@ int main(int argc, char *argv[])
         timeElapsed += duration;
 
         // Prints data for each temperature increase
-        cout << "#------------------------------#\nAverage Spin: "
-             << avgSpin/(mcs_max*.1) << "\nTemperature: "
+        cout << "#------------------------------#\nAverage Spin (M / M^2): "
+             << avgSpin/(mcs_max*.1*length*length) << " / " << avgSpin2/(mcs_max*.1) << "\nTemperature: "
              << temp << "\nDuration: " << duration << "(s)\nEst. Time Remaining: "
              // Calculates the est. time remaining in minutes by using the total time
              << timeElapsed/(temp)*(endTemp-temp)/60 << "(min)\n";
 
         // Stores the data. Note: the average spin is only for the last 10% of the MCS
-        dataArray[int(temp/tempInc)-1] = avgSpin/(mcs_max*.1);
+        dataArray[int(temp/tempInc)-1] = avgSpin/(mcs_max*.1*length*length);
+        dataArray2[int(temp/tempInc)-1] = avgSpin2/(mcs_max*.1);
     }
-
     writeData(fileName, int((endTemp-startTemp)/tempInc), dataArray);
+    writeData(fileName2, int((endTemp-startTemp)/tempInc), dataArray2);
 
     cout << "#------------------------------#\nSimulation finished, time elapsed: " << timeElapsed/60 << "(min)";
 }
