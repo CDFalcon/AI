@@ -12,19 +12,21 @@
 using namespace std;
 
 //##############################\\
+// VARS
 
-const int length = 5;               // Rectangular Lattice length
-const int mcs_max = 50000;      // Maximum reps for the Monte Carlo sim
-const double startTemp = 0.03;        // Starting temperature for the sim
-const double endTemp = 3.99;          // Final temperature for the sim
-const double tempInc = 0.03;          // Temperature increment
-const string fileName = "5x5.dat";  // File name for data storage
-const string fileName2 = "5x5^2.dat";  // File name for data storage - ^2
+const int length = 16;               // Rectangular Lattice length
+const int mcs_max = 10000;           // Maximum reps for the Monte Carlo sim
+const double startTemp = 2.4;        // Starting temperature for the sim
+const double endTemp = 3.0;          // Final temperature for the sim
+const double tempInc = 0.05;         // Temperature increment
+const int configurations = 100;        // Number of configurations per temperature
+const string fileName = "data.dat";    // File name for data storage
 
 int lattice[length][length];         // Lattice Array
 mt19937 gen(time(0));                // mersenne twister seeded to time = system
 
 //##############################\\
+// GENERAL FUNCTIONS
 
 int randomInt(int start, int end){
     uniform_int_distribution<> dis(start, end);
@@ -36,31 +38,58 @@ double randomDouble(double start, double end){
     return dis(gen);
 }
 
-void writeData(string file, int arrayLength, double array[arrayLength]){
-    ofstream f(file);
+void writeData(double array[int((endTemp-startTemp)/tempInc)][configurations][length][length]){
+    ofstream f(fileName);
 
     if(f.is_open()){
-        cout<<"#------------------------------#\nWriting data to " << file << endl;
-        // Stores basic data at the top of the .dat file
-        f << length << endl << mcs_max << endl
-            << startTemp << endl << endTemp << endl
-            << tempInc << endl;
 
-        for (int i = 0; i < arrayLength - 1; i++) {
-            f << array[i] << endl;
+        cout<<"\n#-------------------------------#\nWriting data to " << fileName << endl;
+
+        // Stores basic data at the top of the .dat file
+        // Example Format:
+        // length mcs_max startTemp endTemp tempInc configurations 0 0 0 etc
+
+        f << length;
+        f << " " << mcs_max;
+        f << " " << startTemp;
+        f << " " << endTemp;
+        f << " " << tempInc;
+        f << " " << configurations;
+
+        // Fills the rest of the row with 0's for matlab
+        for (int i = 5; i < length-1; i++)
+            f << " 0";
+        f << endl;
+
+        // For each temperature
+        for(double temp = startTemp; temp <= endTemp; temp += tempInc){
+            // For each configuration
+            for(int i=0; i < configurations; i++) {
+                // For each row
+                for(int y=0; y<length;y++) {
+                    // For each value
+                    for (int x = 0; x < length; x++) {
+                        f << array[int((temp-startTemp)/tempInc)][i][x][y];
+                        f << " ";
+                    }
+                    f << endl;
+                }
+            }
         }
     }
+
     f.close();
 }
 
 //##############################\\
+// FUNCTIONS
 
 // Fills the lattice with random spins: either 1 or -1
 void NewLattice()
 {
     for (int x=0; x<length; x++) {
         for (int y = 0; y < length; y++) {
-            int initNum = randomInt(0, 1);
+            // int initNum = randomInt(0, 1);
             //if(initNum==0)
             lattice[x][y] = 1;
             //if(initNum==1)
@@ -107,73 +136,110 @@ void Flip(int x, int y, double temp)
     }
 }
 
-double LatticeSpin(){
-    double net_lattice = 0;
+void createPCAArray(double dataArray[int((endTemp-startTemp)/tempInc)][configurations][length][length]){
 
-    for (int x=0; x<length; x++){
-        for(int y=0; y<length; y++){
-            net_lattice += double(lattice[x][y]);
+    /*
+    double pcaArray[int((endTemp-startTemp)/tempInc)][configurations][length][length];
+
+    // For each temperature
+    for(double temp = startTemp; temp <= endTemp; temp += tempInc){
+        // For each column
+        for(int x=0; x<length;x++) {
+
+            // Find the average spin
+            double averageSpin = 0.0;
+
+            // For all configurations
+            for(int i=0; i < configurations; i++) {
+                // For all Y values in said column
+                for (int y = 0; y < length; y++) {
+                    averageSpin += dataArray[int((temp-startTemp)/tempInc)][i][x][y];
+                }
+            }
+
+            averageSpin = averageSpin/(length*configurations);
+
+
+
+            cout << "\nAverage Spin for Temp. # " << (temp-startTemp)/tempInc + 1
+                 << " and column # " << x+1 << " is " << averageSpin;
+
+
+
+
+            // Then fill the PCA Array with the new values
+            for(int i=0; i < configurations; i++) {
+                for (int y = 0; y < length; y++) {
+                    pcaArray[int((temp-startTemp)/tempInc)][i][x][y] =
+                            (dataArray[int((temp-startTemp)/tempInc)][i][x][y]);// - averageSpin);
+                }
+            }
         }
     }
-    return net_lattice;
+    */
+
+    writeData(dataArray);
 }
 
 int main(int argc, char *argv[])
 {
     double timeElapsed=0;     // Timer
 
-    cout << "Simulation starting...\n";
+    cout << "\nSimulation starting...\n";
 
-    double dataArray[int((endTemp-startTemp)/tempInc)];  //M
-    double dataArray2[int((endTemp-startTemp)/tempInc)]; //M^2
+    double dataArray[int((endTemp-startTemp)/tempInc)][configurations][length][length];
 
-    for(double temp = startTemp; temp <= endTemp; temp += tempInc) {
+    double totalSpin = 0;
 
-        NewLattice();
+    for(double temp = startTemp; temp <= endTemp; temp += tempInc){
 
         // Start timer
         clock_t start = clock();
         double avgSpin = 0.0;
-        double avgSpin2 = 0.0;
+        // double avgSpin2 = 0.0;
 
-        // Loops for the total number of Monte Carlo's specified
-        for (int i = 0; i <= mcs_max; i++) {
-            // Loop once for each lattice position, or length^2
-            for (int j = 0; j < (length * length); j++) {
-                Flip(randomInt(0, (length - 1)), randomInt(0, (length - 1)), temp);
-            }
+        for(int i=0; i < configurations; i++) { // One lattice per config
 
-            // Checks to see if the values fall in the last 10% of mcs loop,
-            // if so then it computes lattice spin
-            if (i >= (mcs_max * .90) && (i <= mcs_max)) {
-                double net_lattice = LatticeSpin();
-                // Finds the average spin for each point in the lattice
-                // Note: for a smooth curve, use
-                // avgSpin += fabs(net_lattice / (length * length));
-                avgSpin += fabs(net_lattice);
 
-                avgSpin2 += (net_lattice * net_lattice / (length * length * length * length));
-                // cout << fabs(net_lattice / (length * length)) << endl;
-                // cout << (net_lattice * net_lattice / (length * length * length * length)) << endl;
+            cout << "\n#-------------------------------#\nLattice #" << i+1
+                 << " for Temp. #" << (temp-startTemp)/tempInc+1 << " out of "
+                 << (endTemp-startTemp)/tempInc << "\n#-------------------------------#\n\n";
+
+
+            NewLattice();
+
+            // Loops for the total number of Monte Carlo's specified
+            for (int j = 0; j <= mcs_max; j++) {
+                // Loop once for each lattice position, or length^2
+                for (int k = 0; k < (length * length); k++) {
+                    Flip(randomInt(0, (length - 1)), randomInt(0, (length - 1)), temp);
+                }
+
+                // If this is the last snapshot, store it
+                if (j == mcs_max) {
+                    for (int y = 0; y < length; y++) {
+                        for (int x = 0; x < length; x++) {
+                            dataArray[int((temp-startTemp)/tempInc)][i][x][y] = lattice[x][y];
+
+                            // cout << dataArray[int((temp-startTemp)/tempInc)][i][x][y] << ",";
+                        }
+                        // cout << endl;
+                    }
+                }
             }
         }
 
-        double duration = (clock() - start) / (double) CLOCKS_PER_SEC;
-        timeElapsed += duration;
+            double duration = (clock() - start) / (double) CLOCKS_PER_SEC;
+            timeElapsed += duration;
 
-        // Prints data for each temperature increase
-        cout << "#------------------------------#\nAverage Spin (M / M^2): "
-             << avgSpin/(mcs_max*.1*length*length) << " / " << avgSpin2/(mcs_max*.1) << "\nTemperature: "
-             << temp << "\nDuration: " << duration << "(s)\nEst. Time Remaining: "
-             // Calculates the est. time remaining in minutes by using the total time
-             << timeElapsed/(temp)*(endTemp-temp)/60 << "(min)\n";
-
-        // Stores the data. Note: the average spin is only for the last 10% of the MCS
-        dataArray[int(temp/tempInc)-1] = avgSpin/(mcs_max*.1*length*length);
-        dataArray2[int(temp/tempInc)-1] = avgSpin2/(mcs_max*.1);
+            // Prints data for each temperature increase
+            cout << "\n#-------------------------------#\nEst. Time Remaining: "
+                 // Time per Spin * remaining ratio of spin
+                 << timeElapsed / 60 / (temp - startTemp + tempInc) * (endTemp - temp) << "(min)\n"
+                 << "#-------------------------------#\n";
     }
-    writeData(fileName, int((endTemp-startTemp)/tempInc), dataArray);
-    writeData(fileName2, int((endTemp-startTemp)/tempInc), dataArray2);
 
-    cout << "#------------------------------#\nSimulation finished, time elapsed: " << timeElapsed/60 << "(min)";
+    createPCAArray(dataArray);
+
+    cout << "#-------------------------------#\nSimulation finished, time elapsed: " << timeElapsed/60 << "(min)";
 }
