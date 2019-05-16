@@ -14,12 +14,12 @@ using namespace std;
 //##############################\\
 // VARS
 
-const int length = 30;               // Rectangular Lattice length
-const int mcs_max = 100000;          // Maximum reps for the Monte Carlo sim
+const int length = 5;               // Rectangular Lattice length
+const int mcs_max = 1000;          // Maximum reps for the Monte Carlo sim
 const double startTemp = 2.0;        // Starting temperature for the sim
 const double endTemp = 2.8;          // Final temperature for the sim
 const auto tempInc = 0.05;           // Temperature increment
-const int configurations = 100;      // Number of configurations per temperature
+const int configurations = 1;      // Number of configurations per temperature
 const string filename = "data.dat";  // Name of data file
 
 //mt19937 gen(static_cast<unsigned int>(time(nullptr)));                // mersenne twister seeded to time = system
@@ -128,7 +128,8 @@ void NewLattice()
 // Performs a flip
 void Flip(int x, int y, double temp)
 {
-    int *top = nullptr, *bottom = nullptr, *left = nullptr, *right = nullptr;
+    //int *top = nullptr, *bottom = nullptr, *left = nullptr, *right = nullptr;
+    int top, bottom, left, right;
 
     double dEnergy; // Change in energy
 
@@ -151,17 +152,16 @@ void Flip(int x, int y, double temp)
         right=lattice[x][y+1];
 
     // Calculates the change in energy
-    dEnergy= 2*lattice[x][y]*(*top + *bottom + *left + *right);
+    dEnergy= 2*lattice[x][y]*(top + bottom + left + right);
 
     // If the change in energy is negative (good), flip the spin
-    if (dEnergy <= 0){
+    if (dEnergy <= 0)
         lattice[x][y]=-1*lattice[x][y];
-    }
+
         // Else if a random number between 0.0 and 1.0 is less than
         // e^(-1*change sin energy/temperature), also flip
-    else if (randomDouble(0.0,1.0) < exp((-dEnergy/temp))){
+    else if (randomDouble(0.0,1.0) < exp((-dEnergy/temp)))
         lattice[x][y]=-1*lattice[x][y];
-    }
 }
 
 int main()
@@ -291,9 +291,7 @@ int main()
 
     f.close();
 
-    dataArray = new double***[int((endTemp-startTemp)/tempInc)+1];
-
-    for( int i = 0 ; i < int((endTemp-startTemp)/tempInc)+1; i++ ) {
+    for(int i = 0; i < int((endTemp-startTemp)/tempInc)+1; i++) {
         for (int j = 0; j < configurations; j++) {
             for (int k = 0; k < length; k++)
                 delete [] dataArray[i][j][k];
