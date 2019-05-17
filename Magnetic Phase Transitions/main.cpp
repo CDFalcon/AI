@@ -14,12 +14,12 @@ using namespace std;
 //##############################\\
 // VARS
 
-const int length = 5;               // Rectangular Lattice length
-const int mcs_max = 1000;          // Maximum reps for the Monte Carlo sim
+const int length = 30;               // Rectangular Lattice length
+const int mcs_max = 250000;          // Maximum reps for the Monte Carlo sim
 const double startTemp = 2.0;        // Starting temperature for the sim
 const double endTemp = 2.8;          // Final temperature for the sim
-const auto tempInc = 0.05;           // Temperature increment
-const int configurations = 1;      // Number of configurations per temperature
+const auto tempInc = 0.02;           // Temperature increment
+const int configurations = 10000;      // Number of configurations per temperature
 const string filename = "data.dat";  // Name of data file
 
 //mt19937 gen(static_cast<unsigned int>(time(nullptr)));                // mersenne twister seeded to time = system
@@ -39,52 +39,6 @@ int randomInt(int start, int end){
 double randomDouble(double start, double end){
     uniform_real_distribution<> dis(start, end);
     return dis(mt_rand);
-}
-
-void writeData(double array[int((endTemp-startTemp)/tempInc)][configurations][length][length]){
-    ofstream f(filename);
-
-    if(f.is_open()){
-
-        cout<<"\n#-------------------------------#\nWriting data to " << "data.dat" << endl;
-
-        // Stores basic data at the top of the .dat file
-        // Example Format:
-        // length mcs_max startTemp endTemp tempInc configurations 0 0 0 etc
-
-        f << length;
-        f << " " << mcs_max;
-        f << " " << startTemp;
-        f << " " << endTemp;
-        f << " " << tempInc;
-        f << " " << configurations;
-
-        // Fills the rest of the row with 0's for matlab
-        for (int i = 5; i < length*length-1; i++)
-            f << " 0";
-        f << endl;
-
-        // For each temperature
-        for(double temp = startTemp; temp <= endTemp; temp += tempInc){
-            // For each configuration
-            for(int i=0; i < configurations; i++) {
-                // For each row
-                for(int y=0; y<length;y++) {
-                    // For each value
-                    for (int x = 0; x < length; x++) {
-                        f << array[int((temp-startTemp)/tempInc)][i][x][y];
-                        f << " ";
-                    }
-                    // Multiple row lattice
-                    // f << endl;
-                }
-                // One row lattice
-                f << endl;
-            }
-        }
-    }
-
-    f.close();
 }
 
 //##############################\\
@@ -128,40 +82,39 @@ void NewLattice()
 // Performs a flip
 void Flip(int x, int y, double temp)
 {
-    //int *top = nullptr, *bottom = nullptr, *left = nullptr, *right = nullptr;
-    int top, bottom, left, right;
-
+    int *top, *bottom, *left, *right;
     double dEnergy; // Change in energy
 
     // Checks to make sure the random point is not out of the bounds of the array
     if (x==0)
-        top=lattice[length-1][y];
+        top=&lattice[length-1][y];
     else
-        top=lattice[x-1][y];
+        top=&lattice[x-1][y];
     if (x==length-1)
-        bottom=lattice[0][y];
+        bottom=&lattice[0][y];
     else
-        bottom=lattice[x+1][y];
+        bottom=&lattice[x+1][y];
     if (y==0)
-        left=lattice[x][length-y];
+        left=&lattice[x][length-y];
     else
-        left=lattice[x][y-1];
+        left=&lattice[x][y-1];
     if (y==length-1)
-        right=lattice[x][0];
+        right=&lattice[x][0];
     else
-        right=lattice[x][y+1];
+        right=&lattice[x][y+1];
 
     // Calculates the change in energy
-    dEnergy= 2*lattice[x][y]*(top + bottom + left + right);
+    dEnergy= 2*lattice[x][y]*(*top + *bottom + *left + *right);
 
     // If the change in energy is negative (good), flip the spin
-    if (dEnergy <= 0)
+    if (dEnergy <= 0){
         lattice[x][y]=-1*lattice[x][y];
-
+    }
         // Else if a random number between 0.0 and 1.0 is less than
-        // e^(-1*change sin energy/temperature), also flip
-    else if (randomDouble(0.0,1.0) < exp((-dEnergy/temp)))
+        // e^(-1*change in energy/temperature), also flip
+    else if (randomDouble(0.0,1.0) < exp((-dEnergy/temp))){
         lattice[x][y]=-1*lattice[x][y];
+    }
 }
 
 int main()
